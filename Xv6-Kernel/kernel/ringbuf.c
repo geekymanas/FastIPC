@@ -129,7 +129,7 @@ createbuf(char* straddr, int opdesc, unsigned long* retvaddr)
 	struct proc *p = myproc();
 	for(i = 0;i < MAX_RINGBUFS;i++)
 	{
-		if(strcmp(straddr, ringbufs[i].name) != 0)
+		if(strcmp(straddr, ringbufs[i].name) == 0)
 		{
 			current_index = i;
 			break;
