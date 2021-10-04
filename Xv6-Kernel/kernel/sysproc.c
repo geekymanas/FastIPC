@@ -97,31 +97,33 @@ sys_uptime(void)
 }
 
 uint64
-sys_createbuf()
+sys_createbuf(void)
 {
   uint64 p;
   uint64 q;
+  int passedValue;
+  char buf[16]; 
   struct proc *p1 = myproc();
-  if(argaddr(2, &p) < 0){
-    return -1;
-   }
   
-    if(argaddr(0, &q) < 0){
+  if(argaddr(0, &q) < 0){
 	    return -1;
     }
   
-  int passedValue;
-
   if(argint(1, &passedValue) < 0)
     return -1;
-   char buf[16]; 
+  
+  if(argaddr(2, &p) < 0){
+    return -1;
+  }
+  
+   printf("%p\n",p);
    copyinstr(p1->pagetable, buf, q, sizeof(buf));
-   return (uint64) createbuf(buf, passedValue, (void*)p);
+   return (uint64) createbuf(buf, passedValue, p);
 }
 
 
 uint64
-sys_closebuf()
+sys_closebuf(void)
 {
 	uint64 q;
 	struct proc *p1 = myproc();

@@ -23,7 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int createbuf(char* straddr, int opdesc, void* retvaddr);
+int createbuf(char* straddr, int opdesc, char** retvaddr);
 int closebuf(char* straddr, int opdesc);
 
 // ulib.c

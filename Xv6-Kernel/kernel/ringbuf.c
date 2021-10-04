@@ -11,7 +11,8 @@
 #define MAX_RINGBUFS 10
 #define RINGBUF_SIZE 16
 
-#define MAP_START 12288 + (PGSIZE*2) + (128*1024*1024)
+#define MAP_START MAXVA - 2*PGSIZE - 10*34*PGSIZE
+//12288 + (PGSIZE*2) + (128*1024*1024)
 #define SPACE_JUMP 34*PGSIZE
 
 
@@ -102,6 +103,7 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 			}
 			return -1;
 		}
+		printf("%d	%p	%p\n", i, x,walkaddr(p->pagetable, (long unsigned int)x));
        }
        
        if(newmap){
@@ -120,7 +122,7 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 }
 
 int
-createbuf(char* straddr, int opdesc, void* retvaddr)
+createbuf(char* straddr, int opdesc, uint64 retvaddr)
 {
 	if(opdesc < 0 || opdesc > 1) return -1;
 	acquire(&ringbuf_lock);
@@ -174,7 +176,9 @@ createbuf(char* straddr, int opdesc, void* retvaddr)
         		return -1;
         	}
 	}
-    	retvaddr = ringbufs[current_index].vabuf;
+//    	retvaddr = ringbufs[current_index].vabuf;
+	printf("%p\n",ringbufs[current_index].vabuf);
+    	copyout(p->pagetable, retvaddr, (char*)&ringbufs[current_index].vabuf, sizeof(ringbufs[current_index].vabuf));
     	acquire(&p->lock);
     	p->validRingBuf = 1;
     	release(&p->lock);
