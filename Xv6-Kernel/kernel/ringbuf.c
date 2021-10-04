@@ -24,14 +24,14 @@ struct ringbuf {
   int refcount;
   char name[16];
   int pidsRW[2];
-  unsigned long* bufPA[RINGBUF_SIZE];
-  unsigned long *vabuf;
-  unsigned long *book;
+  void* bufPA[RINGBUF_SIZE];
+  void *vabuf;
+  void *book;
 };
 
-struct book {
-  unsigned int long read_done, write_done;
-};
+// struct book {								// Done: No need this
+//   unsigned int long read_done, write_done;
+// };
 
 struct ringbuf ringbufs[MAX_RINGBUFS];
 
@@ -76,12 +76,12 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 {
 	struct proc *p = myproc();
 	int i;
-	unsigned long *start = (unsigned long*)MAP_START;
-	unsigned long *x;
+	void *start = (void*)MAP_START;
+	void *x;
 	while(walkaddr(p->pagetable, (uint64)start) != 0)
 	{
 		start = start + SPACE_JUMP;	
-		if((unsigned long)start > MAXMAPLOC) return -1;
+		if((unsigned long) start > MAXMAPLOC) return -1;
 	}
 	x = start;
 	ringbufs[current_index].vabuf = start;
@@ -89,7 +89,7 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 	for(i = 0;i < RINGBUF_SIZE*2;i++, x+=PGSIZE){
 		if(i < RINGBUF_SIZE && newmap){
 			mem = kalloc();
-			ringbufs[current_index].bufPA[i] = (unsigned long*)mem;
+			ringbufs[current_index].bufPA[i] = (void*)mem;
 		}
 		if(mappages(p->pagetable, (uint64)x, PGSIZE, (uint64)ringbufs[current_index].bufPA[i%RINGBUF_SIZE], PTE_U|PTE_R|PTE_W|PTE_V) != 0){
 			int point = i-1;
@@ -120,7 +120,7 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 }
 
 int
-createbuf(char* straddr, int opdesc, unsigned long* retvaddr)
+createbuf(char* straddr, int opdesc, void* retvaddr)
 {
 	if(opdesc < 0 || opdesc > 1) return -1;
 	acquire(&ringbuf_lock);
@@ -203,7 +203,7 @@ closebuf(char* straddr, int opdesc)
 		release(&ringbuf_lock);	
 		return -1;
 	}
-	unsigned long* d = ringbufs[current_index].vabuf;
+	void* d = ringbufs[current_index].vabuf;
 	if(--ringbufs[i].refcount >= 1)
 	{
 		unmapphypage = 0;

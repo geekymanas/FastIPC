@@ -60,7 +60,7 @@ void            ramdiskintr(void);
 void            ramdiskrw(struct buf*);
 
 // ringbuf.c
-int		createbuf(char* straddr, int opdesc, unsigned long* retvaddr);
+int		createbuf(char* straddr, int opdesc, void* retvaddr);
 int 		closebuf(char* straddr, int opdesc);
 int 		ringbufCleanup();
 

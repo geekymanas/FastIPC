@@ -116,7 +116,7 @@ sys_createbuf()
     return -1;
    char buf[16]; 
    copyinstr(p1->pagetable, buf, q, sizeof(buf));
-   return (uint64) createbuf(buf, passedValue, (unsigned long int*)p);
+   return (uint64) createbuf(buf, passedValue, (void*)p);
 }
 
 
