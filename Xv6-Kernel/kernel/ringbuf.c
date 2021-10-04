@@ -165,7 +165,7 @@ createbuf(char* straddr, int opdesc, unsigned long* retvaddr)
 		ringbufs[current_index].refcount++;
 		ringbufs[current_index].pidsRW[!opdesc] = 0;		
 		ringbufs[current_index].pidsRW[opdesc] = p->pid;
-		safestrcpy(ringbufs[current_index].name, straddr, sizeof(straddr));
+		safestrcpy(ringbufs[current_index].name, straddr, sizeof(straddr));		// TODO: not sizeof(straddr) but sizeof(name) so that it can truncate
         	if(processSpace_mapper(current_index, straddr, opdesc, 1) != 0) 
         	{
         		safestrcpy(ringbufs[current_index].name, "", sizeof(0));
@@ -235,7 +235,7 @@ closebuf(char* straddr, int opdesc)
         	if(ringbufs[i].pidsRW[0] == p->pid || ringbufs[i].pidsRW[1] == p->pid)
         	{
         		pidringvalid = 1;
-        		printf("Here\n");
+        		printf("Here\n");			// TODO: Why are you printing this?
         	}
         		
         }
