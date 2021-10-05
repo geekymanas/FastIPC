@@ -53,8 +53,9 @@ main(void)
 	printf("RingBuf Index: %d\n", ringBuf2);
 	printf("\n");printf("\n");
 
-	char *write_pointer;
+	char *write_pointer, *read_pointer;
 	int bytes, i, size;
+	char ch;
 	
 	// Write 1
 	size=4096;
@@ -88,6 +89,66 @@ main(void)
 	printf("%p\t", write_pointer);
 	printf("\n");
 	ringbuf_finish_write(ringBuf1, size);
+	printf("\n");
+
+	// Read 1
+	size=4096;
+	do
+	{
+		ringbuf_start_read(ringBuf1, &read_pointer, &bytes);
+	} while (bytes < size);	
+	printf("Max Read Size: %d\n", bytes);
+	for(i=0 ; i<size ; i++){
+		ch = *read_pointer;
+		read_pointer++;
+		if (ch != (char) i){
+			printf("Not Same! %c :: %c\n", ch, (char) i);
+			exit(1);
+		}
+	}
+	printf("%p\t", read_pointer);
+	printf("\n");
+	ringbuf_finish_read(ringBuf1, size);
+	printf("\n");
+
+	// Read 2
+	size=4096;
+	do
+	{
+		ringbuf_start_read(ringBuf1, &read_pointer, &bytes);
+	} while (bytes < size);	
+	printf("Max Read Size: %d\n", bytes);
+	for(i=0 ; i<size ; i++){
+		ch = *read_pointer;
+		read_pointer++;
+		if (ch != (char) i){
+			printf("Not Same! %c :: %c\n", ch, (char) i);
+			exit(1);
+		}
+	}
+	printf("%p\t", read_pointer);
+	printf("\n");
+	ringbuf_finish_read(ringBuf1, size);
+	printf("\n");
+
+	// Read 3
+	size=4096;
+	do
+	{
+		ringbuf_start_read(ringBuf1, &read_pointer, &bytes);
+	} while (bytes < size);	
+	printf("Max Read Size: %d\n", bytes);
+	for(i=0 ; i<size ; i++){
+		ch = *read_pointer;
+		read_pointer++;
+		if (ch != (char) i){
+			printf("Not Same! %c :: %c\n", ch, (char) i);
+			exit(1);
+		}
+	}
+	printf("%p\t", read_pointer);
+	printf("\n");
+	ringbuf_finish_read(ringBuf1, size);
 	printf("\n");
 
 	

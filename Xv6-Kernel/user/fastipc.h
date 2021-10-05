@@ -116,6 +116,46 @@ ringbuf_finish_write(int rd, int bytes)         // TODO: Need any checks here?
     write = load(&user_ring_bufs[rd].book->write_done);
     
     printf("Finish Write2: %d, %d\n", read, write);
-    printf("Written %d:%d:%d bytes (Remaining: %d)\n", write, read, BUF_SIZE, (write - read)%BUF_SIZE);
+    printf("Written %d bytes (Remaining: %d)\n", bytes, (write - read));
+    return 0;
+}
+
+int
+ringbuf_start_read(int rd, char **addr, int *bytes)
+{
+    if ((rd > MAX_RINGBUFS) || (user_ring_bufs[rd].exists != 1)){
+        printf("Invalid Descriptor for Read Start: %d\n", rd);
+        return -1;
+    }
+
+    unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
+    unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
+    if ((BUF_SIZE - (write - read)) < 0){
+        printf("Start Read: Buffer is -ve\n");
+        exit(1);
+    }
+
+    *bytes = (write - read);
+    *addr = (char *) user_ring_bufs[rd].buf;
+    printf("Start Read: %d, %d, %d, %p, %p\n", read, write, *bytes, *addr, user_ring_bufs[rd].buf);
+    return 0;
+}
+
+int
+ringbuf_finish_read(int rd, int bytes)         // TODO: Need any checks here?
+{
+    if ((rd > MAX_RINGBUFS) || (user_ring_bufs[rd].exists != 1)){
+        printf("Invalid Descriptor for Read Start: %d\n", rd);
+        return -1;
+    }
+    unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
+    unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
+    printf("Finish Read1: %d, %d\n", read, write);
+    store(&user_ring_bufs[rd].book->read_done, read+bytes);
+
+    read = load(&user_ring_bufs[rd].book->read_done);
+    
+    printf("Finish Read2: %d, %d\n", read, write);
+    printf("Read %d:%d:%d bytes (Remaining: %d)\n", write, read, BUF_SIZE, (write - read)%BUF_SIZE);
     return 0;
 }
