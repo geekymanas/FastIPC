@@ -136,6 +136,7 @@ UPROGS=\
 	$U/_pipetest\
 	$U/_pipe2\
 	$U/_createRingBuf\
+	$U/_ringtest\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

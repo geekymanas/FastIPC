@@ -6,6 +6,8 @@
 #define BUF_SIZE 65536
 #define BOOKOFFSET 131072  // TODO: Check if this is correct
 
+#define print
+
 typedef struct book {
   unsigned int long read_done, write_done;
 } __attribute__((__may_alias__)) book ;
@@ -97,7 +99,7 @@ ringbuf_start_write(int rd, char **addr, int *bytes)
 
     *bytes = BUF_SIZE - (write - read);                // TODO: How to Handle Full Buffers?
     *addr = (char *) user_ring_bufs[rd].buf;
-    printf("Start Write: %d, %d, %p, %p\n", read, write, *addr, user_ring_bufs[rd].buf);
+    // printf("Start Write: %d, %d, %p, %p\n", read, write, *addr, user_ring_bufs[rd].buf);
     return 0;
 }
 
@@ -108,15 +110,15 @@ ringbuf_finish_write(int rd, int bytes)         // TODO: Need any checks here?
         printf("Invalid Descriptor for Read Start: %d\n", rd);
         return -1;
     }
-    unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
+    // unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
     unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
-    printf("Finish Write1: %d, %d\n", read, write);
+    // printf("Finish Write1: %d, %d\n", read, write);
     store(&user_ring_bufs[rd].book->write_done, write+bytes);
 
-    write = load(&user_ring_bufs[rd].book->write_done);
+    // write = load(&user_ring_bufs[rd].book->write_done);
     
-    printf("Finish Write2: %d, %d\n", read, write);
-    printf("Written %d bytes (Remaining: %d)\n", bytes, (write - read));
+    // printf("Finish Write2: %d, %d\n", read, write);
+    // printf("Written %d bytes (Remaining: %d)\n", bytes, (write - read));
     return 0;
 }
 
@@ -137,7 +139,7 @@ ringbuf_start_read(int rd, char **addr, int *bytes)
 
     *bytes = (write - read);
     *addr = (char *) user_ring_bufs[rd].buf;
-    printf("Start Read: %d, %d, %d, %p, %p\n", read, write, *bytes, *addr, user_ring_bufs[rd].buf);
+    // printf("Start Read: %d, %d, %d, %p, %p\n", read, write, *bytes, *addr, user_ring_bufs[rd].buf);
     return 0;
 }
 
@@ -149,13 +151,13 @@ ringbuf_finish_read(int rd, int bytes)         // TODO: Need any checks here?
         return -1;
     }
     unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
-    unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
-    printf("Finish Read1: %d, %d\n", read, write);
+    // unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
+    // printf("Finish Read1: %d, %d\n", read, write);
     store(&user_ring_bufs[rd].book->read_done, read+bytes);
 
-    read = load(&user_ring_bufs[rd].book->read_done);
+    // read = load(&user_ring_bufs[rd].book->read_done);
     
-    printf("Finish Read2: %d, %d\n", read, write);
-    printf("Read %d:%d:%d bytes (Remaining: %d)\n", write, read, BUF_SIZE, (write - read)%BUF_SIZE);
+    // printf("Finish Read2: %d, %d\n", read, write);
+    // printf("Read %d:%d:%d bytes (Remaining: %d)\n", write, read, BUF_SIZE, (write - read)%BUF_SIZE);
     return 0;
 }
