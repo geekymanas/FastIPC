@@ -3,8 +3,8 @@
 
 #define MAX_RINGBUFS 10
 #define RINGBUF_SIZE 16
-#define BUF_SIZE RINGBUF_SIZE*4096
-#define BOOKOFFSET 4096*0  // TODO: Check if this is correct
+#define BUF_SIZE 65536
+#define BOOKOFFSET 131072  // TODO: Check if this is correct
 
 typedef struct book {
   unsigned int long read_done, write_done;
@@ -17,11 +17,11 @@ struct user_ring_buf {
   char name[16];
 };
 
-void store(int *p, int v) {
+void store(long unsigned int *p, int v) {
   __atomic_store_8(p, v, __ATOMIC_SEQ_CST);
 }
 
-int load(int *p) {
+int load(long unsigned int *p) {
   return __atomic_load_8(p, __ATOMIC_SEQ_CST);
 }
 
@@ -30,8 +30,9 @@ struct user_ring_buf user_ring_bufs[MAX_RINGBUFS];
 int
 createRingBuf(char* straddr, int opdesc)
 {
-    void* ringbuf = (void*) 0 ;       // TODO: Is this correct?
-    if (createbuf(straddr, opdesc, ringbuf) != 0) {
+    void* ringbuf;       // TODO: Is this correct?
+    int exists = createbuf(straddr, opdesc, &ringbuf);
+    if (exists == -1) {
         printf("\nRingbuf could not be created\n");
         return -1;
     }
@@ -45,10 +46,18 @@ createRingBuf(char* straddr, int opdesc)
         if (user_ring_bufs[i].exists != 1){
             user_ring_bufs[i].buf = ringbuf;
             user_ring_bufs[i].book = (book *) (ringbuf+BOOKOFFSET);
-            user_ring_bufs[i].book->read_done = 0;
-            // user_ring_bufs[i].book->write_done = 0;
+            if (exists){
+                store(&user_ring_bufs[i].book->read_done, 0);
+                store(&user_ring_bufs[i].book->write_done, 0);
+                printf("RingBuf Created with :\t");
+            }
+            else
+                printf("RingBuf already exists with :\t");
+
             user_ring_bufs[i].exists = 1;
             strcpy(user_ring_bufs[i].name, straddr);
+            printf("Loc: %p,%p\tName: %s\t", user_ring_bufs[i].buf, user_ring_bufs[i].book, user_ring_bufs[i].name);
+            printf("Book Page: %d,%d\n", user_ring_bufs[i].book->read_done, user_ring_bufs[i].book->write_done);
             return i;
         }
     }
@@ -67,6 +76,7 @@ closeRingBuf(char* straddr, int rd, int opdesc)
         printf("Invalid Name for Descriptor: %s :: %s\n", straddr, user_ring_bufs[rd].name);
         return -1;
     }
+    user_ring_bufs[rd].exists = 0;
     return closebuf(straddr, opdesc);
 }
 
@@ -78,12 +88,34 @@ ringbuf_start_write(int rd, char **addr, int *bytes)
         return -1;
     }
 
-    // unsigned int long read = *load(*(user_ring_bufs[rd].book->read_done));       TODO: Make Atomic
-    // unsigned int long write = *load(*(user_ring_bufs[rd].book->write_done));
-    unsigned int long read = user_ring_bufs[rd].book->read_done;
-    unsigned int long write = user_ring_bufs[rd].book->write_done;
+    unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
+    unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
     // *bytes = BUF_SIZE;
+    
     *bytes = BUF_SIZE - (write - read)%BUF_SIZE;
     *addr = (char *) user_ring_bufs[rd].buf;
+    printf("Start Write: %d, %d, %p, %p\n", read, write, *addr, user_ring_bufs[rd].buf);
+    return 0;
+}
+
+// 0x0000003FFFEAA000
+// 0x0000000000003F80
+
+int
+ringbuf_finish_write(int rd, int bytes)
+{
+    if ((rd > MAX_RINGBUFS) || (user_ring_bufs[rd].exists != 1)){
+        printf("Invalid Descriptor for Read Start: %d\n", rd);
+        return -1;
+    }
+    unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
+    unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
+    printf("Finish Write1: %d, %d\n", read, write);
+    store(&user_ring_bufs[rd].book->write_done, write+bytes);
+
+    write = load(&user_ring_bufs[rd].book->write_done);
+    
+    printf("Finish Write2: %d, %d\n", read, write);
+    printf("Written %d:%d:%d bytes (Remaining: %d)\n", write, read, BUF_SIZE, (write - read)%BUF_SIZE);
     return 0;
 }

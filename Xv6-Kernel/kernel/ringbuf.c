@@ -103,7 +103,7 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 			}
 			return -1;
 		}
-		printf("%d	%p	%p\n", i, x,walkaddr(p->pagetable, (long unsigned int)x));
+		// printf("%d	%p	%p\n", i, x,walkaddr(p->pagetable, (long unsigned int)x));
        }
        
        if(newmap){
@@ -127,6 +127,7 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 	if(opdesc < 0 || opdesc > 1) return -1;
 	acquire(&ringbuf_lock);
 	int i = 0;
+	int exists = 1;
 	int current_index = -1;
 	struct proc *p = myproc();
 	for(i = 0;i < MAX_RINGBUFS;i++)
@@ -134,6 +135,7 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 		if(strcmp(straddr, ringbufs[i].name) == 0)
 		{
 			current_index = i;
+			exists = 0;				// TODO: Check if a ringbuf that already exists returns a 1
 			break;
 		}
 	}
@@ -176,14 +178,14 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
         		return -1;
         	}
 	}
-//    	retvaddr = ringbufs[current_index].vabuf;
-	printf("%p\n",ringbufs[current_index].vabuf);
-    	copyout(p->pagetable, retvaddr, (char*)&ringbufs[current_index].vabuf, sizeof(ringbufs[current_index].vabuf));
-    	acquire(&p->lock);
-    	p->validRingBuf = 1;
-    	release(&p->lock);
+    // retvaddr = ringbufs[current_index].vabuf;
+	// printf("%p\n",ringbufs[current_index].vabuf);
+	copyout(p->pagetable, retvaddr, (char*)&ringbufs[current_index].vabuf, sizeof(ringbufs[current_index].vabuf));
+	acquire(&p->lock);
+	p->validRingBuf = 1;
+	release(&p->lock);
 	release(&ringbuf_lock);
-	return 0;
+	return exists;
 }
 
 int
