@@ -191,6 +191,7 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 int
 closebuf(char* straddr, int opdesc)
 {
+	printf("Here\n");
 	struct proc *p = myproc();
 	int i = 0;
 	int current_index = 0;
@@ -241,7 +242,6 @@ closebuf(char* straddr, int opdesc)
         	if(ringbufs[i].pidsRW[0] == p->pid || ringbufs[i].pidsRW[1] == p->pid)
         	{
         		pidringvalid = 1;
-        		printf("Here\n");			// TODO: Why are you printing this?
         	}
         		
         }

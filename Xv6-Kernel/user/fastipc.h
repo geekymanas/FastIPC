@@ -51,15 +51,15 @@ createRingBuf(char* straddr, int opdesc)
             if (exists){
                 store(&user_ring_bufs[i].book->read_done, 0);
                 store(&user_ring_bufs[i].book->write_done, 0);
-                printf("RingBuf Created with :\t");
+                // printf("RingBuf Created with :\t");
             }
             else
-                printf("RingBuf already exists with :\t");
+                // printf("RingBuf already exists with :\t");
 
             user_ring_bufs[i].exists = 1;
             strcpy(user_ring_bufs[i].name, straddr);
-            printf("Loc: %p,%p\tName: %s\t", user_ring_bufs[i].buf, user_ring_bufs[i].book, user_ring_bufs[i].name);
-            printf("Book Page: %d,%d\n", user_ring_bufs[i].book->read_done, user_ring_bufs[i].book->write_done);
+            // printf("Loc: %p,%p\tName: %s\t", user_ring_bufs[i].buf, user_ring_bufs[i].book, user_ring_bufs[i].name);
+            // printf("Book Page: %d,%d\n", user_ring_bufs[i].book->read_done, user_ring_bufs[i].book->write_done);
             return i;
         }
     }

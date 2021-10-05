@@ -342,10 +342,10 @@ void
 exit(int status)
 {
   struct proc *p = myproc();
-  if(p->validRingBuf == 1)
+ /* if(p->validRingBuf == 1)
   {
   	ringbufCleanup();
-  }
+  }*/
   if(p == initproc)
     panic("init exiting");
 

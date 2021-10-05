@@ -81,7 +81,6 @@ int main(){
 	}else if(status > 0)	// Read Here
 	{	
 		int ringBuf1 = createRingBuf(str1, 0);
-		wait(0);
 		char *read_pointer;
 		char ch;
 		while (counter < 100000)
@@ -110,6 +109,7 @@ int main(){
 		if (closeRingBuf(str1, ringBuf1, 0) == -1) printf("Error Closing %s\n", str1);	
 		// wait(0);
 		printf("\nRead %d bytes\n", counter);
+		wait(0);
 	}
 	else{
 		exit(-1);

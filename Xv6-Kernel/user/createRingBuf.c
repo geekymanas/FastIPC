@@ -43,17 +43,17 @@ main(void)
 	// printf("%p\n",retval);
 	 
     char str1[20] = "0123456789012345";
-	char str2[16] = "Bye";
+	//char str2[16] = "Bye";
 
 	
 	int ringBuf1 = createRingBuf(str1, 0);
 	printf("RingBuf Index: %d\n", ringBuf1);
-	int ringBuf2 = createRingBuf(str2, 0);
-	printf("RingBuf Index: %d\n", ringBuf1);
+	int ringBuf2 = createRingBuf(str1, 1);
+	//printf("RingBuf Index: %d\n", ringBuf1);
 	printf("RingBuf Index: %d\n", ringBuf2);
-	printf("\n");printf("\n");
+	//printf("\n");printf("\n");
 
-	char *write_pointer, *read_pointer;
+	/*char *write_pointer, *read_pointer;
 	int bytes, i, size;
 	char ch;
 	
@@ -149,10 +149,10 @@ main(void)
 	printf("%p\t", read_pointer);
 	printf("\n");
 	ringbuf_finish_read(ringBuf1, size);
-	printf("\n");
+	printf("\n");*/
 
 	
 	if (closeRingBuf(str1, ringBuf1, 0) == -1) printf("Error Closing %s\n", str1);
-	if (closeRingBuf(str2, ringBuf2, 0) == -1) printf("Error Closing %s\n", str2);
+	if (closeRingBuf(str1, ringBuf2, 1) == -1) printf("Error Closing %s\n", str1);
 	exit(0);
 }
