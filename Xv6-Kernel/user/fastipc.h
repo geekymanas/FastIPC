@@ -90,19 +90,19 @@ ringbuf_start_write(int rd, char **addr, int *bytes)
 
     unsigned int long read = load(&user_ring_bufs[rd].book->read_done);
     unsigned int long write = load(&user_ring_bufs[rd].book->write_done);
-    // *bytes = BUF_SIZE;
-    
-    *bytes = BUF_SIZE - (write - read)%BUF_SIZE;
+    if ((BUF_SIZE - (write - read)) < 0){
+        printf("Start Write: Buffer is -ve\n");
+        exit(1);
+    }
+
+    *bytes = BUF_SIZE - (write - read);                // TODO: How to Handle Full Buffers?
     *addr = (char *) user_ring_bufs[rd].buf;
     printf("Start Write: %d, %d, %p, %p\n", read, write, *addr, user_ring_bufs[rd].buf);
     return 0;
 }
 
-// 0x0000003FFFEAA000
-// 0x0000000000003F80
-
 int
-ringbuf_finish_write(int rd, int bytes)
+ringbuf_finish_write(int rd, int bytes)         // TODO: Need any checks here?
 {
     if ((rd > MAX_RINGBUFS) || (user_ring_bufs[rd].exists != 1)){
         printf("Invalid Descriptor for Read Start: %d\n", rd);
