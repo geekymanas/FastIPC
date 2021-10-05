@@ -6,17 +6,11 @@
 #include "proc.h"
 #include "defs.h"
 
-#define PGSIZE 4096
-
 #define MAX_RINGBUFS 10
 #define RINGBUF_SIZE 16
 
-#define MAP_START MAXVA - 2*PGSIZE - 10*34*PGSIZE
-//12288 + (PGSIZE*2) + (128*1024*1024)
+#define MAP_START MAXVA - 2*PGSIZE - 15*34*PGSIZE 
 #define SPACE_JUMP 34*PGSIZE
-
-
-#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 #define MAXMAPLOC (MAXVA - 36*PGSIZE)
 
 struct spinlock ringbuf_lock;
@@ -24,20 +18,16 @@ struct spinlock ringbuf_lock;
 struct ringbuf {
   int refcount;
   char name[16];
-  int pidsRW[2];
-  void* bufPA[RINGBUF_SIZE];
-  void *vabuf;
-  void *book;
+  int pidsRW[2];			//used to tie process id to buffer read/write side
+  void* bufPA[RINGBUF_SIZE];		//used to hold all the 16 physical page address of each ring buffer
+  void *vabuf;				//used to hold starting virtual address of the each ring buffer
+  void *book;				//used to hold physical address of book page
 };
-
-// struct book {								// Done: No need this
-//   unsigned int long read_done, write_done;
-// };
 
 struct ringbuf ringbufs[MAX_RINGBUFS];
 
 int
-closebuf(char* straddr, int opdesc);
+closebuf(char* straddr, int opdesc);	
 
 int
 strcmp(char *p, char *q)
@@ -47,6 +37,10 @@ strcmp(char *p, char *q)
   return (uchar)*p - (uchar)*q;
 }
 
+
+
+//used to cleanup from exit() path when a process exits without calling close on it's ringbufs
+//Will iterate over the ringbufs and check the pid and call closeBuf system call on the open ringbufs of that process
 int ringbufCleanup()
 {
 	int i = 0;
@@ -72,7 +66,7 @@ int ringbufCleanup()
 	return 0;
 }
 
-
+//A function used to create physical pages and map them to virtual address and also only create virtual mappings if the physical pages are already mapped
 int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap)
 {
 	struct proc *p = myproc();
@@ -103,7 +97,6 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 			}
 			return -1;
 		}
-		// printf("%d	%p	%p\n", i, x,walkaddr(p->pagetable, (long unsigned int)x));
        }
        
        if(newmap){
@@ -121,6 +114,9 @@ int processSpace_mapper(int current_index, char* straddr, int opdesc, int newmap
 	return 0;	      
 }
 
+
+//used to create a ringbuffer and is the client side facing call, which will lookup the ringbufs array to see if it already exists
+//and if there is space left in the ringbufs array to assign new ringbuf and calls the process mapper to perform the mappings
 int
 createbuf(char* straddr, int opdesc, uint64 retvaddr)
 {
@@ -135,7 +131,13 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 		if(strcmp(straddr, ringbufs[i].name) == 0)
 		{
 			current_index = i;
-			exists = 0;				// TODO: Check if a ringbuf that already exists returns a 1
+			exists = 0;	
+			if(ringbufs[i].pidsRW[0] == p->pid || ringbufs[i].pidsRW[1] == p->pid)
+			{
+				printf("Cannot map same process as reader and writer\n");
+				release(&ringbuf_lock);
+				return -1;
+			}			
 			break;
 		}
 	}
@@ -166,10 +168,14 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 				break;
 			}
 		}
+		if(current_index == -1){
+			release(&ringbuf_lock);
+			return -1;
+		}
 		ringbufs[current_index].refcount++;
 		ringbufs[current_index].pidsRW[!opdesc] = 0;		
 		ringbufs[current_index].pidsRW[opdesc] = p->pid;
-		safestrcpy(ringbufs[current_index].name, straddr, sizeof(straddr));		// TODO: not sizeof(straddr) but sizeof(name) so that it can truncate
+		safestrcpy(ringbufs[current_index].name, straddr, sizeof(straddr));		
         	if(processSpace_mapper(current_index, straddr, opdesc, 1) != 0) 
         	{
         		safestrcpy(ringbufs[current_index].name, "", sizeof(0));
@@ -178,17 +184,16 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
         		return -1;
         	}
 	}
-    // retvaddr = ringbufs[current_index].vabuf;
-	// printf("%p\n",ringbufs[current_index].vabuf);
 	copyout(p->pagetable, retvaddr, (char*)&ringbufs[current_index].vabuf, sizeof(ringbufs[current_index].vabuf));
 	acquire(&p->lock);
 	p->validRingBuf = 1;
-	printf("Created {%d} index {%d} opdesc {%d}\n", exists, current_index, opdesc);
 	release(&p->lock);
 	release(&ringbuf_lock);
 	return exists;
 }
 
+
+//will unmap the virtual and physical mappings depending on the ref count
 int
 closebuf(char* straddr, int opdesc)
 {
@@ -225,7 +230,6 @@ closebuf(char* straddr, int opdesc)
      	    ringbufs[current_index].vabuf = 0;
      	    ringbufs[current_index].book = 0;
 	}
-	
 	for(i = 0;i < RINGBUF_SIZE;i++)
 	{
 	    	uvmunmap(p->pagetable, (uint64) d, 1, unmapphypage);
@@ -237,13 +241,12 @@ closebuf(char* straddr, int opdesc)
 	    	d+=PGSIZE;
 	}	
         uvmunmap(p->pagetable, (uint64) d, 1, unmapphypage);
-        int pidringvalid = 0;
-        for(i = 0;i < MAX_RINGBUFS;i++)
+        int pidringvalid = 0;	//used to know at exit() path if this process has any valid ringbufs open
+        for(i = 0;i < MAX_RINGBUFS;i++)			
         {
         	if(ringbufs[i].pidsRW[0] == p->pid || ringbufs[i].pidsRW[1] == p->pid)
         	{
         		pidringvalid = 1;
-        		printf("Here\n");			// TODO: Why are you printing this?
         	}
         		
         }
