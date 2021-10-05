@@ -139,7 +139,7 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 			break;
 		}
 	}
-	if(current_index > 0)
+	if(current_index >= 0)
 	{
 		if((ringbufs[current_index].pidsRW[opdesc] != 0) || (ringbufs[current_index].refcount < 0)) 
 		{	
@@ -183,6 +183,7 @@ createbuf(char* straddr, int opdesc, uint64 retvaddr)
 	copyout(p->pagetable, retvaddr, (char*)&ringbufs[current_index].vabuf, sizeof(ringbufs[current_index].vabuf));
 	acquire(&p->lock);
 	p->validRingBuf = 1;
+	printf("Created {%d} index {%d} opdesc {%d}\n", exists, current_index, opdesc);
 	release(&p->lock);
 	release(&ringbuf_lock);
 	return exists;
@@ -213,6 +214,7 @@ closebuf(char* straddr, int opdesc)
 	if(--ringbufs[i].refcount >= 1)
 	{
 		unmapphypage = 0;
+		ringbufs[current_index].pidsRW[opdesc] = 0;
 	}
 	else
 	{
